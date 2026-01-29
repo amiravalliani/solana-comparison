@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blockchain Fee Calculator - Compare 5 Major Chains</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --solana-green: #14F195;
+      --solana-purple: #9945FF;
+      --base-blue: #0052FF;
+      --tempo-orange: #FF6B35;
+      --polygon-purple: #8247E5;
+      --stellar-black: #000000;
+      --background: #fafafa;
+      --surface: #ffffff;
+      --surface-hover: #f5f5f5;
+      --text-primary: #1a1a1a;
+      --text-secondary: #666666;
+      --text-tertiary: #999999;
+      --border: #e5e5e5;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+      --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--background);
+      color: var(--text-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: 
+        radial-gradient(circle at 10% 20%, rgba(20, 241, 149, 0.03) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(0, 82, 255, 0.03) 0%, transparent 40%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 64px;
+      padding-top: 20px;
+      animation: fadeInDown 0.6s ease-out;
+    }
+
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    h1 {
+      font-size: clamp(2.5rem, 5vw, 3.5rem);
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 16px;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+
+    .subtitle {
+      font-size: 1.125rem;
+      font-weight: 400;
+      color: var(--text-secondary);
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    .calculator-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 48px;
+      animation: fadeInUp 0.6s ease-out 0.1s backwards;
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 968px) {
+      .calculator-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .card:hover {
+      box-shadow: var(--shadow-md);
+      border-color: #d0d0d0;
+    }
+
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-primary);
+    }
+
+    .icon {
+      width: 20px;
+      height: 20px;
+      display: inline-block;
+      opacity: 0.7;
+    }
+
+    .input-group {
+      margin-bottom: 24px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    input, select {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.9375rem;
+      color: var(--text-primary);
+      transition: all 0.15s ease;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--text-primary);
+      box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+    }
+
+    input:hover, select:hover {
+      border-color: #c0c0c0;
+    }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      margin-bottom: 48px;
+      animation: fadeInUp 0.6s ease-out 0.2s backwards;
+    }
+
+    .result-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+      position: relative;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .result-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    .result-card.solana {
+      border-left: 3px solid var(--solana-green);
+    }
+
+    .result-card.base {
+      border-left: 3px solid var(--base-blue);
+    }
+
+    .result-card.tempo {
+      border-left: 3px solid var(--tempo-orange);
+    }
+
+    .result-card.polygon {
+      border-left: 3px solid var(--polygon-purple);
+    }
+
+    .result-card.stellar {
+      border-left: 3px solid var(--stellar-black);
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .chain-name {
+      font-size: 1.25rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-primary);
+    }
+
+    .chain-badge {
+      font-size: 0.6875rem;
+      padding: 4px 10px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+
+    .chain-badge.production {
+      background: rgba(20, 241, 149, 0.1);
+      color: #00a86b;
+      border: 1px solid rgba(20, 241, 149, 0.2);
+    }
+
+    .chain-badge.testnet {
+      background: rgba(255, 107, 53, 0.1);
+      color: #e65100;
+      border: 1px solid rgba(255, 107, 53, 0.2);
+    }
+
+    .result-metric {
+      margin-bottom: 20px;
+    }
+
+    .metric-label {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    .metric-value {
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+      font-feature-settings: 'tnum';
+    }
+
+    .metric-value.large {
+      font-size: 2rem;
+    }
+
+    .metric-subtext {
+      font-size: 0.8125rem;
+      color: var(--text-tertiary);
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+
+    .savings-badge {
+      display: inline-block;
+      background: rgba(20, 241, 149, 0.1);
+      color: #00a86b;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      margin-top: 12px;
+      border: 1px solid rgba(20, 241, 149, 0.2);
+    }
+
+    .warning-badge {
+      display: inline-block;
+      background: rgba(255, 107, 53, 0.1);
+      color: #e65100;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      margin-top: 12px;
+      border: 1px solid rgba(255, 107, 53, 0.2);
+    }
+
+    .chart-container {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 40px;
+      margin-bottom: 48px;
+      animation: fadeInUp 0.6s ease-out 0.3s backwards;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .chart-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 32px;
+      text-align: center;
+      color: var(--text-primary);
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      margin-bottom: 48px;
+      animation: fadeInUp 0.6s ease-out 0.4s backwards;
+    }
+
+    .info-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .info-card:hover {
+      box-shadow: var(--shadow-md);
+      border-color: #d0d0d0;
+    }
+
+    .info-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: var(--text-primary);
+    }
+
+    .info-text {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    footer {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--text-tertiary);
+      font-size: 0.8125rem;
+      border-top: 1px solid var(--border);
+      margin-top: 64px;
+      line-height: 1.6;
+    }
+
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      opacity: 1;
+    }
+
+    .metric-value,
+    input[type="number"] {
+      font-family: 'IBM Plex Mono', 'Courier New', monospace;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    const NETWORKS = {
+      solana: {
+        name: 'Solana',
+        avgFee: 0.00025,
+        color: '#14F195',
+        finality: 12.8,
+        finalityNote: '~12.8s (150ms with Alpenglow)',
+        status: 'production',
+        tps: 1300,
+        gradient: 'linear-gradient(135deg, #14F195, #9945FF)'
+      },
+      polygon: {
+        name: 'Polygon PoS',
+        avgFee: 0.015,
+        color: '#8247E5',
+        finality: 128,
+        finalityNote: '~2.1 min (128 block confirmations)',
+        status: 'production',
+        tps: 65,
+        gradient: '#8247E5'
+      },
+      base: {
+        name: 'Base',
+        avgFee: 0.01,
+        color: '#0052FF',
+        finality: 780,
+        finalityNote: '~13 min (Ethereum L1)',
+        status: 'production',
+        tps: 98,
+        gradient: '#0052FF'
+      },
+      stellar: {
+        name: 'Stellar',
+        avgFee: 0.00001,
+        color: '#000000',
+        finality: 5,
+        finalityNote: '~5s (3-5 second ledger close)',
+        status: 'production',
+        tps: 200,
+        gradient: '#000000'
+      },
+      tempo: {
+        name: 'Tempo',
+        avgFee: 0.001,
+        color: '#FF6B35',
+        finality: 0.6,
+        finalityNote: '~0.6s (testnet, unproven)',
+        status: 'testnet',
+        tps: null,
+        gradient: '#FF6B35'
+      }
+    };
+
+    function App() {
+      const [transactions, setTransactions] = useState(1000000);
+      const [txSize, setTxSize] = useState(100);
+      const [timeScale, setTimeScale] = useState('month');
+      const chartRef = useRef(null);
+      const chartInstance = useRef(null);
+
+      const timeScaleMultipliers = {
+        week: 1,
+        month: 4.33,
+        year: 52
+      };
+
+      const calculateCosts = () => {
+        const results = {};
+        const multiplier = timeScaleMultipliers[timeScale];
+        const totalTxs = transactions * multiplier;
+
+        Object.entries(NETWORKS).forEach(([key, network]) => {
+          const totalCost = totalTxs * network.avgFee;
+          const avgTimePerTx = network.finality;
+          const totalTime = (totalTxs * avgTimePerTx) / 3600;
+          const throughputTime = network.tps ? (totalTxs / network.tps) / 3600 : null;
+
+          results[key] = {
+            ...network,
+            totalCost,
+            totalTxs,
+            avgTimePerTx,
+            totalTime,
+            throughputTime,
+            costPerDollar: (network.avgFee / txSize) * 100
+          };
+        });
+
+        return results;
+      };
+
+      const results = calculateCosts();
+
+      const baseCost = results.base.totalCost;
+      const solanaSavings = ((baseCost - results.solana.totalCost) / baseCost * 100).toFixed(1);
+      const polygonSavings = ((baseCost - results.polygon.totalCost) / baseCost * 100).toFixed(1);
+      const stellarSavings = ((baseCost - results.stellar.totalCost) / baseCost * 100).toFixed(1);
+      const tempoSavings = ((baseCost - results.tempo.totalCost) / baseCost * 100).toFixed(1);
+
+      useEffect(() => {
+        if (chartInstance.current) {
+          chartInstance.current.destroy();
+        }
+
+        const ctx = chartRef.current.getContext('2d');
+        
+        chartInstance.current = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: ['Solana', 'Polygon', 'Base', 'Stellar', 'Tempo'],
+            datasets: [{
+              label: 'Total Cost ($)',
+              data: [
+                results.solana.totalCost,
+                results.polygon.totalCost,
+                results.base.totalCost,
+                results.stellar.totalCost,
+                results.tempo.totalCost
+              ],
+              backgroundColor: [
+                'rgba(20, 241, 149, 0.15)',
+                'rgba(130, 71, 229, 0.15)',
+                'rgba(0, 82, 255, 0.15)',
+                'rgba(0, 0, 0, 0.15)',
+                'rgba(255, 107, 53, 0.15)'
+              ],
+              borderColor: [
+                '#14F195',
+                '#8247E5',
+                '#0052FF',
+                '#000000',
+                '#FF6B35'
+              ],
+              borderWidth: 2,
+              borderRadius: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+              legend: {
+                display: false
+              },
+              tooltip: {
+                backgroundColor: '#ffffff',
+                titleColor: '#1a1a1a',
+                bodyColor: '#666666',
+                borderColor: '#e5e5e5',
+                borderWidth: 1,
+                padding: 12,
+                displayColors: false,
+                titleFont: {
+                  size: 13,
+                  weight: '600'
+                },
+                bodyFont: {
+                  size: 12
+                },
+                callbacks: {
+                  label: function(context) {
+                    return '$' + context.parsed.y.toLocaleString('en-US', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2
+                    });
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  color: '#666666',
+                  font: {
+                    size: 12
+                  },
+                  callback: function(value) {
+                    return '$' + value.toLocaleString();
+                  }
+                },
+                grid: {
+                  color: '#f0f0f0',
+                  drawBorder: false
+                },
+                border: {
+                  display: false
+                }
+              },
+              x: {
+                ticks: {
+                  color: '#1a1a1a',
+                  font: {
+                    size: 13,
+                    weight: '600'
+                  }
+                },
+                grid: {
+                  display: false
+                },
+                border: {
+                  display: false
+                }
+              }
+            }
+          }
+        });
+
+        return () => {
+          if (chartInstance.current) {
+            chartInstance.current.destroy();
+          }
+        };
+      }, [transactions, timeScale, txSize]);
+
+      const formatCurrency = (value) => {
+        return new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 6
+        }).format(value);
+      };
+
+      const formatNumber = (value) => {
+        return new Intl.NumberFormat('en-US').format(value);
+      };
+
+      const formatTime = (hours) => {
+        if (hours < 1) {
+          return `${(hours * 60).toFixed(1)} minutes`;
+        } else if (hours < 24) {
+          return `${hours.toFixed(1)} hours`;
+        } else {
+          return `${(hours / 24).toFixed(1)} days`;
+        }
+      };
+
+      return (
+        <div className="container">
+          <header>
+            <h1>Blockchain Fee Calculator</h1>
+            <p className="subtitle">
+              Compare transaction costs and timing across Solana, Polygon, Base, Stellar, and Tempo
+            </p>
+          </header>
+
+          <div className="calculator-grid">
+            <div className="card">
+              <h2 className="card-title">
+                <span className="icon">⚙️</span>
+                Transaction Parameters
+              </h2>
+              
+              <div className="input-group">
+                <label htmlFor="transactions">
+                  Transactions per {timeScale === 'week' ? 'Week' : timeScale === 'month' ? 'Month' : 'Year'}
+                </label>
+                <input
+                  id="transactions"
+                  type="number"
+                  min="1"
+                  step="1000"
+                  value={transactions}
+                  onChange={(e) => setTransactions(Math.max(1, parseInt(e.target.value) || 0))}
+                />
+              </div>
+
+              <div className="input-group">
+                <label htmlFor="txSize">
+                  Average Transaction Size (USD)
+                </label>
+                <input
+                  id="txSize"
+                  type="number"
+                  min="0.01"
+                  step="10"
+                  value={txSize}
+                  onChange={(e) => setTxSize(Math.max(0.01, parseFloat(e.target.value) || 0))}
+                />
+              </div>
+
+              <div className="input-group">
+                <label htmlFor="timeScale">
+                  Time Scale
+                </label>
+                <select
+                  id="timeScale"
+                  value={timeScale}
+                  onChange={(e) => setTimeScale(e.target.value)}
+                >
+                  <option value="week">Weekly</option>
+                  <option value="month">Monthly</option>
+                  <option value="year">Yearly</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="card">
+              <h2 className="card-title">
+                <span className="icon">📊</span>
+                Calculation Summary
+              </h2>
+              
+              <div className="result-metric">
+                <div className="metric-label">Total Transactions</div>
+                <div className="metric-value">{formatNumber(results.solana.totalTxs)}</div>
+                <div className="metric-subtext">
+                  Over 1 {timeScale === 'week' ? 'week' : timeScale === 'month' ? 'month' : 'year'}
+                </div>
+              </div>
+
+              <div className="result-metric">
+                <div className="metric-label">Total Transaction Volume</div>
+                <div className="metric-value">{formatCurrency(results.solana.totalTxs * txSize)}</div>
+                <div className="metric-subtext">
+                  {formatNumber(transactions)} txs × ${txSize} × {timeScaleMultipliers[timeScale].toFixed(2)}
+                </div>
+              </div>
+
+              <div className="result-metric">
+                <div className="metric-label">Cost Per $1,000 Transacted</div>
+                <div className="metric-subtext" style={{ marginTop: '8px', lineHeight: '1.8' }}>
+                  Solana: {formatCurrency((results.solana.avgFee / txSize) * 1000)}<br/>
+                  Polygon: {formatCurrency((results.polygon.avgFee / txSize) * 1000)}<br/>
+                  Stellar: {formatCurrency((results.stellar.avgFee / txSize) * 1000)}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="results-grid">
+            <div className="result-card solana">
+              <div className="result-header">
+                <div className="chain-name">
+                  {results.solana.name}
+                  <span className="chain-badge production">Live</span>
+                </div>
+              </div>
+
+              <div className="result-metric">
+                <div className="metric-label">Total Cost</div>
+                <div className="metric-value large">{formatCurrency(results.solana.totalCost)}</div>
+                <div className="savings-badge">
+                  ✓ Save {solanaSavings}% vs Base
+                </div>
+              </div>
+
+              <div className="result-metric">
+                <div className="metric-label">Cost Per Transaction</div>
+                <div className="metric-value">{formatCurrency(results.solana.avgFee)}</div>
+              </div>
+
+              <div className="result-metric">
+                <div className="metric-label">Finality Time</div>
+                <div className="metric-value">12.8s</div>
+                <div className="metric-subtext">150ms with Alpenglow upgrade</div>
+              </div>
+
+              <div className="result-metric">
+                <div className="metric-label">Network Throughput</div>
+                <div className="metric-value">{formatNumber(results.solana.tps)} TPS</div>
+                <div className="metric-subtext">
+                  Process all txs in: {formatTime(results.solana.throughputTime)}
+                </div>
+              </div>
+            </div>
+
+            <div className="result-card polygon">
+              <div className="result-header">
+                <div className="chain-name">
+                  {results.polygon.name}
+                  <span className="chain-badge production">Live</span>
+                </div>
+              </div>
+
+              <div className="result-metric">
+                <div className="metric-label">Total Cost</div>
+                <div className="metric-value large">{formatCurrency(results.polygon.totalCost)}</div>
+                <div className="savings-badge">
+                  ✓ Save {polygonSavings}% vs Base
+                </div>
+              </div>
+
+              <div className="result-metric">
+                <div className="metric-label">Cost Per Transaction</div>
+                <div className="metric-value">{formatCurrency(results.polygon.avgFee)}</div>
+                <div className="metric-subtext">60x higher than Solana</div>
+              </div>
+
+              <div className="result-metric">
+                <div className="metric-label">Finality Time</div>
+                <div className="metric-value">~2.1 min</div>
+                <div className="metric-subtext">128 block confirmations required</div>
+              </div>
+
+              <div className="result-metric">
+                <div className="metric-label">Network Throughput</div>
+                <div className="metric-value">{formatNumber(results.polygon.tps)} TPS</div>
+                <div className="metric-subtext">
+                  Process all txs in: {formatTime(results.polygon.throughputTime)}
+                </div>
+              </div>
+            </div>
+
+            <div className="result-card base">
+              <div className="result-header">
+                <div className="chain-name">
+                  {results.base.name}
+                  <span className="chain-badge production">Live</span>
+                </div>
+              </div>
+
+              <div className="result-metric">
+                <div className="metric-label">Total Cost</div>
+                <div className="metric-value large">{formatCurrency(results.base.totalCost)}</div>
+              </div>
+
+              <div className="result-metric">
+                <div className="metric-label">Cost Per Transaction</div>
+                <div className="metric-value">{formatCurrency(results.base.avgFee)}</div>
+                <div className="metric-subtext">40x higher than Solana</div>
+              </div>
+
+              <div className="result-metric">
+                <div className="metric-label">Finality Time</div>
+                <div className="metric-value">~13 min</div>
+                <div className="metric-subtext">Ethereum L1 settlement required</div>
+              </div>
+
+              <div className="result-metric">
+                <div className="metric-label">Network Throughput</div>
+                <div className="metric-value">{formatNumber(results.base.tps)} TPS</div>
+                <div className="metric-subtext">
+                  Process all txs in: {formatTime(results.base.throughputTime)}
+                </div>
+              </div>
+            </div>
+
+            <div className="result-card stellar">
+              <div className="result-header">
+                <div className="chain-name">
+                  {results.stellar.name}
+                  <span className="chain-badge production">Live</span>
+                </div>
+              </div>
+
+              <div className="result-metric">
+                <div className="metric-label">Total Cost</div>
+                <div className="metric-value large">{formatCurrency(results.stellar.totalCost)}</div>
+                <div className="savings-badge">
+                  ✓ Save {stellarSavings}% vs Base
+                </div>
+              </div>
+
+              <div className="result-metric">
+                <div className="metric-label">Cost Per Transaction</div>
+                <div className="metric-value">{formatCurrency(results.stellar.avgFee)}</div>
+                <div className="metric-subtext">Fixed 0.00001 XLM (~$0.00001 USD)</div>
+              </div>
+
+              <div className="result-metric">
+                <div className="metric-label">Finality Time</div>
+                <div className="metric-value">~5s</div>
+                <div className="metric-subtext">3-5 second ledger close time</div>
+              </div>
+
+              <div className="result-metric">
+                <div className="metric-label">Network Throughput</div>
+                <div className="metric-value">{formatNumber(results.stellar.tps)} TPS</div>
+                <div className="metric-subtext">
+                  Process all txs in: {formatTime(results.stellar.throughputTime)}
+                </div>
+              </div>
+            </div>
+
+            <div className="result-card tempo">
+              <div className="result-header">
+                <div className="chain-name">
+                  {results.tempo.name}
+                  <span className="chain-badge testnet">Testnet</span>
+                </div>
+              </div>
+
+              <div className="result-metric">
+                <div className="metric-label">Total Cost (Estimated)</div>
+                <div className="metric-value large">{formatCurrency(results.tempo.totalCost)}</div>
+                <div className="warning-badge">
+                  ⚠️ Testnet only - unproven
+                </div>
+              </div>
+
+              <div className="result-metric">
+                <div className="metric-label">Target Fee</div>
+                <div className="metric-value">{formatCurrency(results.tempo.avgFee)}</div>
+                <div className="metric-subtext">Paid in stablecoins (USDC/USDT)</div>
+              </div>
+
+              <div className="result-metric">
+                <div className="metric-label">Claimed Finality</div>
+                <div className="metric-value">~0.6s</div>
+                <div className="metric-subtext">Not validated in production</div>
+              </div>
+
+              <div className="result-metric">
+                <div className="metric-label">Network Status</div>
+                <div className="metric-value" style={{ fontSize: '1.3rem' }}>4 validators</div>
+                <div className="metric-subtext">
+                  All Tempo-operated • Mainnet 2026
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="chart-container">
+            <h3 className="chart-title">Cost Comparison</h3>
+            <canvas ref={chartRef} height="100"></canvas>
+          </div>
+
+          <div className="info-grid">
+            <div className="info-card">
+              <div className="info-title">About Solana</div>
+              <div className="info-text">
+                Production-proven L1 with 16+ months continuous uptime. $14.7B stablecoin supply, 
+                1,300 TPS sustained throughput. Rust-based smart contracts.
+              </div>
+            </div>
+
+            <div className="info-card">
+              <div className="info-title">About Polygon PoS</div>
+              <div className="info-text">
+                Ethereum sidechain using Proof-of-Stake consensus. $1.4B stablecoin supply, 
+                65 TPS average throughput. EVM-compatible with ~2 min finality.
+              </div>
+            </div>
+
+            <div className="info-card">
+              <div className="info-title">About Base</div>
+              <div className="info-text">
+                Optimistic rollup L2 on Ethereum. Single Coinbase sequencer with 13-minute L1 finality. 
+                $4.6B stablecoin supply. EVM-compatible with Solidity.
+              </div>
+            </div>
+
+            <div className="info-card">
+              <div className="info-title">About Stellar</div>
+              <div className="info-text">
+                Payments-focused L1 using Stellar Consensus Protocol. Ultra-low fixed fees (0.00001 XLM). 
+                3-5 second finality. Built for cross-border payments and asset tokenization.
+              </div>
+            </div>
+
+            <div className="info-card">
+              <div className="info-title">About Tempo</div>
+              <div className="info-text">
+                Payments-first L1 in testnet (Dec 2025). Backed by Stripe & Paradigm at $5B valuation. 
+                Claims 100K+ TPS with stablecoin gas fees. Mainnet expected 2026.
+              </div>
+            </div>
+          </div>
+
+          <footer>
+            <p>
+              Data sources: Network documentation, DefiLlama, public testnets • 
+              Fees and timing based on current network conditions • 
+              Tempo data is from testnet and unproven at scale
+            </p>
+          </footer>
+        </div>
+      );
+    }
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
