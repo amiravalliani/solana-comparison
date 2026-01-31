@@ -470,9 +470,9 @@
       const results = calculateCosts();
 
       const baseCost = results.base.totalCost;
-      const solanaSavings = ((baseCost - results.solana.totalCost) / baseCost * 100).toFixed(1);
-      const polygonSavings = ((baseCost - results.polygon.totalCost) / baseCost * 100).toFixed(1);
-      const tempoSavings = ((baseCost - results.tempo.totalCost) / baseCost * 100).toFixed(1);
+      const solanaSavings = baseCost > 0 ? ((baseCost - results.solana.totalCost) / baseCost * 100).toFixed(1) : 0;
+      const polygonSavings = baseCost > 0 ? ((baseCost - results.polygon.totalCost) / baseCost * 100).toFixed(1) : 0;
+      const tempoSavings = baseCost > 0 ? ((baseCost - results.tempo.totalCost) / baseCost * 100).toFixed(1) : 0;
 
       useEffect(() => {
         if (chartInstance.current) {
