@@ -443,16 +443,9 @@
       const chartRef = useRef(null);
       const chartInstance = useRef(null);
 
-      const timeScaleMultipliers = {
-        week: 1,
-        month: 4.33,
-        year: 52
-      };
-
       const calculateCosts = () => {
         const results = {};
-        const multiplier = timeScaleMultipliers[timeScale];
-        const totalTxs = transactions * multiplier;
+        const totalTxs = transactions;
 
         Object.entries(NETWORKS).forEach(([key, network]) => {
           const totalCost = totalTxs * network.avgFee;
@@ -695,7 +688,7 @@
                 <div className="metric-label">Total Transaction Volume</div>
                 <div className="metric-value">{formatCurrency(results.solana.totalTxs * txSize)}</div>
                 <div className="metric-subtext">
-                  {formatNumber(transactions)} txs × ${txSize} × {timeScaleMultipliers[timeScale].toFixed(2)}
+                  {formatNumber(transactions)} txs × ${txSize}
                 </div>
               </div>
 
